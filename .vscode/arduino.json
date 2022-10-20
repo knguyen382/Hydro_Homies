@@ -1,0 +1,5 @@
+{
+    "port": "/dev/tty.usbmodem2101",
+    "board": "Seeeduino:mbed:xiaonRF52840Sense",
+    "sketch": "bottle.ino"
+}

@@ -1,14 +1,18 @@
-#include <HCSR04.h>
+#include <NewPing.h>
 
-HCSR04 hc(1, 2); //initialisation class HCSR04 (trig pin , echo pin)
+#define TRIGGER_PIN  1  // Arduino pin tied to trigger pin on the ultrasonic sensor.
+#define ECHO_PIN     2  // Arduino pin tied to echo pin on the ultrasonic sensor.
+#define MAX_DISTANCE 400 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
 
-void setup()
-{
-    Serial.begin(9600);
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
+
+void setup() {
+  Serial.begin(115200); // Open serial monitor at 115200 baud to see ping results.
 }
 
-void loop()
-{
-    Serial.println(hc.dist()); 
-    delay(60);                 
+void loop() {
+  delay(50);                     // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
+  Serial.print("Ping: ");
+  Serial.print(sonar.ping_cm()); // Send ping, get distance in cm and print result (0 = outside set distance range)
+  Serial.println("cm");
 }
