@@ -4,6 +4,10 @@
 #define ECHO_PIN     2  // Arduino pin tied to echo pin on the ultrasonic sensor.
 #define MAX_DISTANCE 400 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
 
+float Volume;
+float PI = 3.1415;
+float radius = 4.5;
+
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
 
 void setup() {
@@ -15,4 +19,9 @@ void loop() {
   Serial.print("Ping: ");
   Serial.print(sonar.ping_cm()); // Send ping, get distance in cm and print result (0 = outside set distance range)
   Serial.println("cm");
+  Volume = PI*(radius^2)*sonar.ping_cm;
+  Serial.print("Volume: ");
+  Serial.print(Volume);
+  Serial.println("mL");
+  
 }
