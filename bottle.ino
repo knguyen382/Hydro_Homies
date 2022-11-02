@@ -90,7 +90,6 @@ void loop() {
     duration [i] = pulseIn(echoPin, HIGH);
     Serial.print("Duration: ");
     Serial.println(duration [i]);
-    i++;
     Serial.println(i);
   }
   else{
@@ -104,6 +103,8 @@ void loop() {
     Serial.print("Distance: ");
     Serial.println(distance);
     duration_sum = 0;
+  }
+  delay(1000);
 }
 
 void volume_calculation()
