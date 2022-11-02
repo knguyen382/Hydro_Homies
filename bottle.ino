@@ -6,12 +6,13 @@
 #define TRIGGER_PIN  0  // Arduino pin tied to trigger pin on the ultrasonic sensor.
 #define ECHO_PIN     1  // Arduino pin tied to echo pin on the ultrasonic sensor.
 
-long unsigned int Volume;
-//float PI = 3.1415;
-float radius = 4.5;
-float height_water;
-float height_sensor;
-float volume;
+const int trigPin = 2;
+const int echoPin = 3;
+float duration[10], distance;
+float duration_sum = 0;
+float duration_avg;
+int i;
+
 // Replace with your network credentials
 
 const char* ssid = "TheCoffeeByHand";
@@ -50,6 +51,8 @@ HCSR04 sonar(TRIGGER_PIN, ECHO_PIN);
 
 
 void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
   Serial.begin(115200);
   // Initialize the output variables as outputs
   pinMode(output26, OUTPUT);
@@ -77,25 +80,30 @@ void setup() {
 }
 
 void loop() {
-  //delay(200);                     // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
 
-  /*height_sensor = sonar.dist();
-  Serial.print("Height of sensor = ");
-  Serial.print(height_sensor); // Send ping, get distance in cm and print result (0 = outside set distance range)
-  Serial.println("cm");
-
-  height_water = (9.5) - (height_sensor);
-  Serial.print("Height of water = ");
-  Serial.print(height_water); // Send ping, get distance in cm and print result (0 = outside set distance range)
-  Serial.println("cm");
-
-  Serial.print("Volume: ");
-  Serial.print(3.14 * radius * radius * height_water);
-  Serial.println("mL");*/
-  volume_calculation();
-  Serial.println(Volume);
-  
-  
+  if (i < sizeof(duration)/sizeof(float)){
+    duration [i] = pulseIn(echoPin, HIGH);
+    Serial.print("Duration: ");
+    Serial.println(duration [i]);
+    i++;
+    Serial.println(i);
+  }
+  else{
+    for (int j = 0; j < sizeof(duration)/sizeof(float); j++){
+      duration_sum = duration_sum + duration[j];      
+    }
+    duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
+    distance = (duration_avg*.0343)/2;
+    i = 0;
+    Serial.println("");
+    Serial.print("Distance: ");
+    Serial.println(distance);
+    duration_sum = 0;
 }
 
 void volume_calculation()
