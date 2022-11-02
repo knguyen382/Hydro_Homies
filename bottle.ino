@@ -88,8 +88,6 @@ void loop() {
 
   if (i < sizeof(duration)/sizeof(float)){
     duration [i] = pulseIn(echoPin, HIGH);
-    Serial.print("Duration: ");
-    Serial.println(duration [i]);
     i++;
   }
   else{
