@@ -90,7 +90,7 @@ void loop() {
     duration [i] = pulseIn(echoPin, HIGH);
     Serial.print("Duration: ");
     Serial.println(duration [i]);
-    Serial.println(i);
+    i++;
   }
   else{
     for (int j = 0; j < sizeof(duration)/sizeof(float); j++){
