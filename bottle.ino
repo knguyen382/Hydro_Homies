@@ -42,6 +42,8 @@ HCSR04 sonar(TRIGGER_PIN, ECHO_PIN);
 //NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
 
 void setup() {
+  pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
   Serial.begin(115200);
   Serial.print("Connecting to ");
   Serial.println(ssid);
