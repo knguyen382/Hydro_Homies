@@ -52,6 +52,7 @@ void get_volume(void *pvParameters);
 
 void setup() {
   
+  pinMode(TRIGGER_PIN, OUTPUT);
   Serial.begin(115200);
   
   // RTOS TASKS 
@@ -244,7 +245,7 @@ void get_volume(void *pvParameters)
       Serial.println("");
       Serial.print("Distance: ");
       Serial.println(distance);
-      water height = (bottle_height - distance);
+      water_height = (bottle_height - distance);
       /*volume = water_height * PI * bottle_radius^2;
       Serial.print("Current Volume: :");
       Serial.println(volume);*/
