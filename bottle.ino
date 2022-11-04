@@ -16,10 +16,14 @@ float water_consumed;
 float water_remaining;
 float daily_water_intake;
 
+int i;
 float duration[10], distance;
 float duration_sum = 0;
 float duration_avg;
-int i;
+float bottle_radius;
+float bottle_height;
+float water_height;
+float volume;
 
 // Replace with your network credentials
 
@@ -44,6 +48,7 @@ HCSR04 sonar(TRIGGER_PIN, ECHO_PIN);
 
 void web_app(void *pvParameters);
 void wifi(void * pvParameters);
+void get_volume(void *pvParameters);
 
 void setup() {
   
@@ -71,6 +76,14 @@ void setup() {
   ,  NULL 
   ,  ARDUINO_RUNNING_CORE);
 
+  xTaskCreatePinnedToCore(
+  get_volume
+  ,  "volume"   
+  ,  4096  
+  ,  NULL
+  ,  2  
+  ,  NULL 
+  ,  ARDUINO_RUNNING_CORE);
 
 }
 
@@ -201,5 +214,41 @@ void wifi(void *pvParameters)
       server.begin();
     }
     vTaskDelay(100);
+  }
+}
+
+void get_volume(void *pvParameters)
+{
+  (void) pvParameters;
+  while(1)
+  {
+    digitalWrite(TRIGGER_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(ECHO_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIGGER_PIN, LOW);
+    
+    if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
+      duration [i] = pulseIn(ECHO_PIN, HIGH);
+      Serial.print("Duration: ");
+      Serial.println(duration [i]);
+      i++;
+    }
+    else {  //Add all elements of Duration Array
+      for (int j = 0; j < sizeof(duration)/sizeof(float); j++) {
+        duration_sum = duration_sum + duration[j];      
+      }
+      duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
+      distance = (duration_avg*.0343)/2;
+      i = 0; //Clear i for new set of samples
+      Serial.println("");
+      Serial.print("Distance: ");
+      Serial.println(distance);
+      water height = (bottle_height - distance);
+      /*volume = water_height * PI * bottle_radius^2;
+      Serial.print("Current Volume: :");
+      Serial.println(volume);*/
+      duration_sum = 0;
+    }
   }
 }
