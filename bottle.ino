@@ -66,6 +66,7 @@ void setup() {
 
 void loop() {
   get_volume();
+  delay(500);
   web_app();
 }
 
@@ -185,5 +186,4 @@ void get_volume()
     Serial.println(volume);*/
     duration_sum = 0;
   }
-  delay(500);
 }
