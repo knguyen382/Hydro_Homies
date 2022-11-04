@@ -162,20 +162,20 @@ void get_volume()
   digitalWrite(ECHO_PIN, HIGH);
   delayMicroseconds(10);
   digitalWrite(TRIGGER_PIN, LOW);
-
-  if (i < sizeof(duration)/sizeof(float)){
+  
+  if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
     duration [i] = pulseIn(ECHO_PIN, HIGH);
     Serial.print("Duration: ");
     Serial.println(duration [i]);
     i++;
   }
-  else{
-    for (int j = 0; j < sizeof(duration)/sizeof(float); j++){
+  else {  //Add all elements of Duration Array
+    for (int j = 0; j < sizeof(duration)/sizeof(float); j++) {
       duration_sum = duration_sum + duration[j];      
     }
     duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
     distance = (duration_avg*.0343)/2;
-    i = 0;
+    i = 0; //Clear i for new set of samples
     Serial.println("");
     Serial.print("Distance: ");
     Serial.println(distance);
