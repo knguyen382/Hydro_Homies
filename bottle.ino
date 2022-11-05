@@ -225,7 +225,7 @@ void get_volume(void *pvParameters)
   {
     digitalWrite(TRIGGER_PIN, LOW);
     delayMicroseconds(2);
-    digitalWrite(ECHO_PIN, HIGH);
+    digitalWrite(TRIGGER_PIN, HIGH);
     delayMicroseconds(10);
     digitalWrite(TRIGGER_PIN, LOW);
     
