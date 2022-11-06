@@ -73,7 +73,7 @@ void setup() {
   ,  "wifi"   
   ,  4096  
   ,  NULL
-  ,  2  
+  ,  1 
   ,  NULL 
   ,  ARDUINO_RUNNING_CORE);
 
@@ -190,11 +190,11 @@ void wifi(void *pvParameters)
   (void) pvParameters;
   while(1)
   {
-    //if wifi is connected, delay for 5s and move on
+    //if wifi is connected, delay task for 30s
     if(WiFi.status() == WL_CONNECTED)
     { 
-      // check status every 10s
-      vTaskDelay(10000/portTICK_PERIOD_MS);
+      // check status every 30s
+      vTaskDelay(30000/portTICK_PERIOD_MS);
       continue;
     }
     //if not, try to connect and start server
