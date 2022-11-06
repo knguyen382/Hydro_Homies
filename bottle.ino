@@ -252,4 +252,5 @@ void get_volume(void *pvParameters)
       duration_sum = 0;
     }
   }
+  vTaskDelay(100);
 }
