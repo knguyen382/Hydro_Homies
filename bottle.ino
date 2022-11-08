@@ -17,6 +17,7 @@ float water_remaining;
 float daily_water_intake;
 
 int i;
+int k;
 float duration[10], distance;
 float duration_sum = 0;
 float duration_avg;
