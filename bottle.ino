@@ -229,27 +229,43 @@ void get_volume(void *pvParameters)
     delayMicroseconds(10);
     digitalWrite(TRIGGER_PIN, LOW);
     
-    if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
-      duration [i] = pulseIn(ECHO_PIN, HIGH);
-      Serial.print("Duration: ");
-      Serial.println(duration [i]);
-      i++;
+     if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
+    duration [i] = pulseIn(ECHO_PIN, HIGH);
+    //Serial.print("Duration: ");
+    //Serial.println(duration [i]);
+    i++;
+  }
+  else {  //Add all elements of Duration Array
+    for (int j = 0; j < sizeof(duration)/sizeof(float); j++) {
+      duration_sum = duration_sum + duration[j];      
     }
-    else {  //Add all elements of Duration Array
-      for (int j = 0; j < sizeof(duration)/sizeof(float); j++) {
-        duration_sum = duration_sum + duration[j];      
+    duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
+    if (k < 2) {
+      compare[k] = duration_avg*.0343/2;
+      Serial.println(k);
+      k++;
+      if (compare[0] == compare[1]) {
+        distance = compare[0];
+        Serial.println("");
+        Serial.print("Distance: ");
+        Serial.print(distance);
+        Serial.println(" cm");
       }
-      duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
-      distance = (duration_avg*.0343)/2;
-      i = 0; //Clear i for new set of samples
-      Serial.println("");
-      Serial.print("Distance: ");
-      Serial.println(distance);
-      water_height = (bottle_height - distance);
-      /*volume = water_height * PI * bottle_radius^2;
-      Serial.print("Current Volume: :");
-      Serial.println(volume);*/
-      duration_sum = 0;
+      if (k == 2) {
+        k = 0;
+      }
+    }
+    distance = ((duration_avg*.0343)/2);
+    i = 0; //Clear i for new set of samples
+    /*Serial.println("");
+    Serial.print("Distance: ");
+    Serial.print(distance);
+    Serial.println(" cm");*/
+    water_height = (bottle_height - distance);
+    /*volume = water_height * PI * bottle_radius^2;
+    Serial.print("Current Volume: :");
+    Serial.println(volume);*/
+    duration_sum = 0;
     }
   }
   vTaskDelay(100);
