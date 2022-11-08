@@ -25,6 +25,7 @@ float bottle_radius;
 float bottle_height;
 float water_height;
 float volume;
+float compare[2];
 
 // Replace with your network credentials
 
@@ -52,7 +53,7 @@ void wifi(void * pvParameters);
 void get_volume(void *pvParameters);
 
 void setup() {
-  
+  pinMode(ECHO_PIN, INPUT);
   pinMode(TRIGGER_PIN, OUTPUT);
   Serial.begin(115200);
   
