@@ -11,9 +11,9 @@
 // Sensor's trigger and echo pin
 #define TRIGGER_PIN  21  
 #define ECHO_PIN     19  
+#define BUZZER 13
 
 int last_water_consumed_time;
-
 float temp_volume;
 float water_consumed;
 float water_intake_remaining;
@@ -34,11 +34,6 @@ const char* password = "6785702328";
 String header;
 WiFiServer server(80);
 
-// RTC stuff
-const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 14400;
-const int   daylightOffset_sec = 3600;
-
 // web app stuff
 unsigned long currentTime = millis();
 unsigned long previousTime = 0; 
@@ -51,12 +46,13 @@ void web_app(void *pvParameters);
 void wifi(void * pvParameters);
 float get_volume();
 void waterIntakeCalculation(void *pvParameters);
+void alarm();
 
 void setup() {
   
   pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
   Serial.begin(115200);
-  
   // RTOS TASKS 
 
   // web app task
@@ -274,6 +270,7 @@ int get_time(char time_element)
   }
   return 0;
 }
+
 void waterIntakeCalculation(void * pvParameters)
 {
   (void) pvParameters;
@@ -291,7 +288,7 @@ void waterIntakeCalculation(void * pvParameters)
     // alarm if no water consume for more than 2 hours
     if(get_time('h') - last_water_consumed_time >= 2 && last_water_consumed_time != 0)
     {
-      // do some alarming function
+      alarm();
     }
 
     // calculate water remainting til hitting goals
@@ -300,12 +297,23 @@ void waterIntakeCalculation(void * pvParameters)
     // update temporary volume
     temp_volume = get_volume();
 
-    if (current_time > 0 && current_time < 1) // new day, reset
+    if (get_time('h') == 0 && get_time('m') < 15) // new day, reset
     {
       water_intake_remaining = 0;
       last_water_consumed_time = 0;
     }
   }
-  //run calculation every half an hour
-  vTaskDelay(1800000/portTICK_PERIOD_MS);
+  //run calculation every 15 min
+  vTaskDelay(90000/portTICK_PERIOD_MS);
+}
+
+void alarm()
+{
+  for (int i = 0; i < 5; i ++)
+  {  
+    tone(BUZZER, 1000);
+    delay(750);
+    noTone(BUZZER);
+    delay(750); 
+  }
 }
