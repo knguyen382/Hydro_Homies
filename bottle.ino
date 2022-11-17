@@ -260,13 +260,12 @@ float get_volume()
     Serial.print(distance);
     Serial.println(" cm");*/
     water_height = (bottle_height - distance);
-    /*volume = water_height * PI * bottle_radius^2;
-    Serial.print("Current Volume: :");
-    Serial.println(volume);*/
+    volume = water_height * PI * bottle_radius^2;
+    //Serial.print("Current Volume: :");
+    //Serial.println(volume);
     duration_sum = 0;
-    }
+  }
     return volume;
-
 }
 
 int get_time(char time_element)
