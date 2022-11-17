@@ -1,5 +1,6 @@
 #include <HCSR04.h>
 #include <WiFi.h>
+#include "time.h"
 
 #if CONFIG_FREERTOS_UNICORE
 #define ARDUINO_RUNNING_CORE 0
@@ -11,9 +12,11 @@
 #define TRIGGER_PIN  21  
 #define ECHO_PIN     19  
 
+int last_water_consumed_time;
 
+float temp_volume;
 float water_consumed;
-float water_remaining;
+float water_intake_remaining;
 float daily_water_intake;
 
 int i;
@@ -25,30 +28,29 @@ float bottle_height;
 float water_height;
 float volume;
 
-// Replace with your network credentials
-
+// wifi stuff
 const char* ssid = "abc";
 const char* password = "6785702328";
 String header;
-
-
-// Set web server port number to 80
 WiFiServer server(80);
 
+// RTC stuff
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 14400;
+const int   daylightOffset_sec = 3600;
 
-// Current time
+// web app stuff
 unsigned long currentTime = millis();
-// Previous time
 unsigned long previousTime = 0; 
-// Define timeout time in milliseconds (example: 2000ms = 2s)
 const long timeoutTime = 2000;
 
 HCSR04 sonar(TRIGGER_PIN, ECHO_PIN);
 
-
+int get_time(char time_element);
 void web_app(void *pvParameters);
 void wifi(void * pvParameters);
-void get_volume(void *pvParameters);
+float get_volume();
+void waterIntakeCalculation(void *pvParameters);
 
 void setup() {
   
@@ -78,7 +80,7 @@ void setup() {
   ,  ARDUINO_RUNNING_CORE);
 
   xTaskCreatePinnedToCore(
-  get_volume
+  waterIntakeCalculation
   ,  "volume"   
   ,  4096  
   ,  NULL
@@ -147,11 +149,11 @@ void web_app(void *pvParameters)
               client.print(" oz. ");
 
               client.println("<p>Water consumed: </p>");
-              client.print(distance);
+              client.print(water_consumed);
               client.print(" oz. ");
 
-              client.println("<p>Water remaining: </p>");
-              client.print(water_remaining);
+              client.println("<p>Water remaining til goal: </p>");
+              client.print(water_intake_remaining);
               client.print(" oz. ");
               client.println("</body></html>");
         
@@ -218,11 +220,9 @@ void wifi(void *pvParameters)
   }
 }
 
-void get_volume(void *pvParameters)
+float get_volume()
 {
-  (void) pvParameters;
-  while(1)
-  {
+    float volume;
     digitalWrite(TRIGGER_PIN, LOW);
     delayMicroseconds(2);
     digitalWrite(ECHO_PIN, HIGH);
@@ -235,7 +235,8 @@ void get_volume(void *pvParameters)
       Serial.println(duration [i]);
       i++;
     }
-    else {  //Add all elements of Duration Array
+    else 
+    {  //Add all elements of Duration Array
       for (int j = 0; j < sizeof(duration)/sizeof(float); j++) {
         duration_sum = duration_sum + duration[j];      
       }
@@ -251,5 +252,60 @@ void get_volume(void *pvParameters)
       Serial.println(volume);*/
       duration_sum = 0;
     }
+    return volume;
+
+}
+
+int get_time(char time_element)
+{
+  time_t now = time(0);
+  tm *ltm = localtime(&now);
+  switch(time_element)
+  {
+    case ('h'):
+      return ltm->tm_hour;
+      break;
+    case ('m'):
+      return ltm->tm_min;
+      break;
+    case ('s'):
+      return ltm->tm_sec;
+      break;
   }
+  return 0;
+}
+void waterIntakeCalculation(void * pvParameters)
+{
+  (void) pvParameters;
+  while(1)
+  {
+    float current_volume = get_volume();
+    int current_time = get_time('h');
+
+    // some water consumed
+    if(current_volume < temp_volume)
+    {
+      water_consumed += temp_volume - current_volume;
+      last_water_consumed_time = get_time('h');
+    }
+    // alarm if no water consume for more than 2 hours
+    if(get_time('h') - last_water_consumed_time >= 2 && last_water_consumed_time != 0)
+    {
+      // do some alarming function
+    }
+
+    // calculate water remainting til hitting goals
+    water_intake_remaining = daily_water_intake - water_consumed;
+
+    // update temporary volume
+    temp_volume = get_volume();
+
+    if (current_time > 0 && current_time < 1) // new day, reset
+    {
+      water_intake_remaining = 0;
+      last_water_consumed_time = 0;
+    }
+  }
+  //run calculation every half an hour
+  vTaskDelay(1800000/portTICK_PERIOD_MS);
 }
