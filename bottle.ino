@@ -20,6 +20,7 @@ float water_intake_remaining;
 float daily_water_intake;
 
 int i;
+int k;
 float duration[10], distance;
 float duration_sum = 0;
 float duration_avg;
@@ -27,6 +28,7 @@ float bottle_radius;
 float bottle_height;
 float water_height;
 float volume;
+float compare[2];
 
 // wifi stuff
 const char* ssid = "abc";
@@ -49,7 +51,7 @@ void waterIntakeCalculation(void *pvParameters);
 void alarm();
 
 void setup() {
-  
+  pinMode(ECHO_PIN, INPUT);
   pinMode(TRIGGER_PIN, OUTPUT);
   pinMode(BUZZER, OUTPUT);
   Serial.begin(115200);
@@ -71,7 +73,7 @@ void setup() {
   ,  "wifi"   
   ,  4096  
   ,  NULL
-  ,  2  
+  ,  1 
   ,  NULL 
   ,  ARDUINO_RUNNING_CORE);
 
@@ -188,11 +190,11 @@ void wifi(void *pvParameters)
   (void) pvParameters;
   while(1)
   {
-    //if wifi is connected, delay for 5s and move on
+    //if wifi is connected, delay task for 30s
     if(WiFi.status() == WL_CONNECTED)
     { 
-      // check status every 10s
-      vTaskDelay(10000/portTICK_PERIOD_MS);
+      // check status every 30s
+      vTaskDelay(30000/portTICK_PERIOD_MS);
       continue;
     }
     //if not, try to connect and start server
@@ -221,32 +223,47 @@ float get_volume()
     float volume;
     digitalWrite(TRIGGER_PIN, LOW);
     delayMicroseconds(2);
-    digitalWrite(ECHO_PIN, HIGH);
+    digitalWrite(TRIGGER_PIN, HIGH);
     delayMicroseconds(10);
     digitalWrite(TRIGGER_PIN, LOW);
     
-    if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
-      duration [i] = pulseIn(ECHO_PIN, HIGH);
-      Serial.print("Duration: ");
-      Serial.println(duration [i]);
-      i++;
+     if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
+    duration [i] = pulseIn(ECHO_PIN, HIGH);
+    //Serial.print("Duration: ");
+    //Serial.println(duration [i]);
+    i++;
+  }
+  else {  //Add all elements of Duration Array
+    for (int j = 0; j < sizeof(duration)/sizeof(float); j++) {
+      duration_sum = duration_sum + duration[j];      
     }
-    else 
-    {  //Add all elements of Duration Array
-      for (int j = 0; j < sizeof(duration)/sizeof(float); j++) {
-        duration_sum = duration_sum + duration[j];      
+    duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
+    if (k < 2) {
+      compare[k] = duration_avg*.0343/2;
+      Serial.println(k);
+      k++;
+      if (compare[0] == compare[1]) {
+        distance = compare[0];
+        Serial.println("");
+        Serial.print("Distance: ");
+        Serial.print(distance);
+        Serial.println(" cm");
       }
-      duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
-      distance = (duration_avg*.0343)/2;
-      i = 0; //Clear i for new set of samples
-      Serial.println("");
-      Serial.print("Distance: ");
-      Serial.println(distance);
-      water_height = (bottle_height - distance);
-      /*volume = water_height * PI * bottle_radius^2;
-      Serial.print("Current Volume: :");
-      Serial.println(volume);*/
-      duration_sum = 0;
+      if (k == 2) {
+        k = 0;
+      }
+    }
+    distance = ((duration_avg*.0343)/2);
+    i = 0; //Clear i for new set of samples
+    /*Serial.println("");
+    Serial.print("Distance: ");
+    Serial.print(distance);
+    Serial.println(" cm");*/
+    water_height = (bottle_height - distance);
+    /*volume = water_height * PI * bottle_radius^2;
+    Serial.print("Current Volume: :");
+    Serial.println(volume);*/
+    duration_sum = 0;
     }
     return volume;
 
