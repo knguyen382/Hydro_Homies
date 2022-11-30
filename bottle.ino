@@ -9,8 +9,8 @@
 #endif
 
 // Sensor's trigger and echo pin
-#define TRIGGER_PIN  21  
-#define ECHO_PIN     19  
+#define TRIGGER_PIN  19  
+#define ECHO_PIN     21  
 #define BUZZER 13
 
 int last_water_consumed_time;
@@ -229,8 +229,6 @@ float get_volume()
     
      if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
     duration [i] = pulseIn(ECHO_PIN, HIGH);
-    //Serial.print("Duration: ");
-    //Serial.println(duration [i]);
     i++;
   }
   else {  //Add all elements of Duration Array
@@ -244,6 +242,41 @@ float get_volume()
       k++;
       if (compare[0] == compare[1]) {
         distance = compare[0];
+        if (compare[0] == compare[1]) {
+        distance = compare[0];
+        if (distance < 4.0) {
+          volume = 1000;
+        }
+        else if (distance >= 4.0 && distance < 6.0) {
+          volume = 900;
+        }
+        else if (distance >= 6.0 && distance < 8.0) {
+          volume = 800;
+        }
+        else if (distance >= 8.0 && distance < 9.0) {
+          volume = 700;
+        }
+        else if (distance >= 9.0 && distance < 10.0) {
+          volume = 600;
+        }
+        else if (distance >= 10.0 && distance < 12.0) {
+          volume = 500;
+        }
+        else if (distance >= 12.0 && distance < 14.0) {
+          volume = 400;
+        }
+        else if (distance >= 14.0 && distance < 16.0) {
+          volume = 300;
+        }
+        else if (distance >= 16.0 && distance < 17.0) {
+          volume = 200;
+        }
+        else if (distance >= 17.0 && distance < 18.0) {
+          volume = 100;
+        }
+        else if (distance >= 18) {
+          volume = 0;
+        }
         Serial.println("");
         Serial.print("Distance: ");
         Serial.print(distance);
@@ -253,16 +286,6 @@ float get_volume()
         k = 0;
       }
     }
-    distance = ((duration_avg*.0343)/2);
-    i = 0; //Clear i for new set of samples
-    /*Serial.println("");
-    Serial.print("Distance: ");
-    Serial.print(distance);
-    Serial.println(" cm");*/
-    water_height = (bottle_height - distance);
-    volume = water_height * PI * bottle_radius^2;
-    //Serial.print("Current Volume: :");
-    //Serial.println(volume);
     duration_sum = 0;
   }
     return volume;
