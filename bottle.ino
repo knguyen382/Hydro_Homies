@@ -1,3 +1,27 @@
+/*
+#include <HCSR04.h>
+
+byte triggerPin = 19;
+byte echoPin = 21;
+
+void setup () {
+  Serial.begin(9600);
+  HCSR04.begin(triggerPin, echoPin);
+}
+
+void loop () {
+  double* distances = HCSR04.measureDistanceCm();
+  
+
+  float volume;
+  volume = map(distances[0],18.5, 3.16, 0, 1000);
+  
+  Serial.println(volume);
+  delay(500);
+  Serial.println(distances[0]);
+  delay(500);
+}
+*/
 #include <HCSR04.h>
 #include <WiFi.h>
 #include "time.h"
