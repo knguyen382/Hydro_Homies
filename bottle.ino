@@ -24,9 +24,6 @@ int k;
 float duration[10], distance;
 float duration_sum = 0;
 float duration_avg;
-float bottle_radius;
-float bottle_height;
-float water_height;
 float volume;
 float compare[2];
 
