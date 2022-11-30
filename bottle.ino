@@ -217,75 +217,67 @@ void wifi(void *pvParameters)
 
 float get_volume()
 {
-    float volume;
-    digitalWrite(TRIGGER_PIN, LOW);
-    delayMicroseconds(2);
-    digitalWrite(TRIGGER_PIN, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(TRIGGER_PIN, LOW);
-    
-     if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
+  digitalWrite(TRIGGER_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGGER_PIN, LOW);
+
+  if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
     duration [i] = pulseIn(ECHO_PIN, HIGH);
     i++;
   }
   else {  //Add all elements of Duration Array
     for (int j = 0; j < sizeof(duration)/sizeof(float); j++) {
       duration_sum = duration_sum + duration[j];      
-    }
-    duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
-    if (k < 2) {
-      compare[k] = duration_avg*.0343/2;
-      Serial.println(k);
-      k++;
-      if (compare[0] == compare[1]) {
-        distance = compare[0];
-        if (compare[0] == compare[1]) {
-        distance = compare[0];
-        if (distance < 4.0) {
-          volume = 1000;
-        }
-        else if (distance >= 4.0 && distance < 6.0) {
-          volume = 900;
-        }
-        else if (distance >= 6.0 && distance < 8.0) {
-          volume = 800;
-        }
-        else if (distance >= 8.0 && distance < 9.0) {
-          volume = 700;
-        }
-        else if (distance >= 9.0 && distance < 10.0) {
-          volume = 600;
-        }
-        else if (distance >= 10.0 && distance < 12.0) {
-          volume = 500;
-        }
-        else if (distance >= 12.0 && distance < 14.0) {
-          volume = 400;
-        }
-        else if (distance >= 14.0 && distance < 16.0) {
-          volume = 300;
-        }
-        else if (distance >= 16.0 && distance < 17.0) {
-          volume = 200;
-        }
-        else if (distance >= 17.0 && distance < 18.0) {
-          volume = 100;
-        }
-        else if (distance >= 18) {
-          volume = 0;
-        }
-        Serial.println("");
-        Serial.print("Distance: ");
-        Serial.print(distance);
-        Serial.println(" cm");
-      }
-      if (k == 2) {
-        k = 0;
-      }
-    }
-    duration_sum = 0;
   }
-    return volume;
+  duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
+  if (k < 2) {
+    compare[k] = duration_avg*.0343/2;
+    Serial.println(k);
+    k++;
+    if (compare[0] == compare[1]) {
+      distance = compare[0];
+      if (distance < 4.0) {
+        volume = 1000;
+      }
+      else if (distance >= 4.0 && distance < 6.0) {
+        volume = 900;
+      }
+      else if (distance >= 6.0 && distance < 8.0) {
+        volume = 800;
+      }
+      else if (distance >= 8.0 && distance < 9.0) {
+        volume = 700;
+      }
+      else if (distance >= 9.0 && distance < 10.0) {
+        volume = 600;
+      }
+      else if (distance >= 10.0 && distance < 12.0) {
+        volume = 500;
+      }
+      else if (distance >= 12.0 && distance < 14.0) {
+        volume = 400;
+      }
+      else if (distance >= 14.0 && distance < 16.0) {
+        volume = 300;
+      }
+      else if (distance >= 16.0 && distance < 17.0) {
+        volume = 200;
+      }
+      else if (distance >= 17.0 && distance < 18.0) {
+        volume = 100;
+      }
+      else if (distance >= 18) {
+        volume = 0;
+      }
+    }
+    if (k == 2) {
+      k = 0;
+    }
+  }
+  duration_sum = 0;
+  return volume;
 }
 
 int get_time(char time_element)
