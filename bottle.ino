@@ -1,27 +1,3 @@
-/*
-#include <HCSR04.h>
-
-byte triggerPin = 19;
-byte echoPin = 21;
-
-void setup () {
-  Serial.begin(9600);
-  HCSR04.begin(triggerPin, echoPin);
-}
-
-void loop () {
-  double* distances = HCSR04.measureDistanceCm();
-  
-
-  float volume;
-  volume = map(distances[0],18.5, 3.16, 0, 1000);
-  
-  Serial.println(volume);
-  delay(500);
-  Serial.println(distances[0]);
-  delay(500);
-}
-*/
 #include <HCSR04.h>
 #include <WiFi.h>
 #include "time.h"
@@ -33,23 +9,20 @@ void loop () {
 #endif
 
 // Sensor's trigger and echo pin
-#define TRIGGER_PIN  19  
-#define ECHO_PIN     21  
+#define TRIGGER  19  
+#define ECHO    21  
 #define BUZZER 13
 
 int last_water_consumed_time;
-float temp_volume;
-float water_consumed;
-float water_intake_remaining;
-float daily_water_intake;
 
-int i;
-int k;
-float duration[10], distance;
-float duration_sum = 0;
-float duration_avg;
-float volume;
-float compare[2];
+float temp_volume = 0;
+float water_consumed[] = 0;
+float water_intake_remaining = 2000;
+float daily_water_intake = 0;
+int water_intake_times = 0;
+int seconds, minutes, hours;
+int idle_time = 0;
+float total_water_intake_today = 0;
 
 // wifi stuff
 const char* ssid = "abc";
@@ -62,18 +35,17 @@ unsigned long currentTime = millis();
 unsigned long previousTime = 0; 
 const long timeoutTime = 2000;
 
-HCSR04 sonar(TRIGGER_PIN, ECHO_PIN);
 
 int get_time(char time_element);
 void web_app(void *pvParameters);
 void wifi(void * pvParameters);
-float get_volume();
+double get_volume();
 void waterIntakeCalculation(void *pvParameters);
 void alarm();
 
 void setup() {
-  pinMode(ECHO_PIN, INPUT);
-  pinMode(TRIGGER_PIN, OUTPUT);
+
+  HCSR04.begin(TRIGGER, ECHO);
   pinMode(BUZZER, OUTPUT);
   Serial.begin(115200);
   // RTOS TASKS 
@@ -94,7 +66,7 @@ void setup() {
   ,  "wifi"   
   ,  4096  
   ,  NULL
-  ,  1 
+  ,  3 
   ,  NULL 
   ,  ARDUINO_RUNNING_CORE);
 
@@ -165,15 +137,19 @@ void web_app(void *pvParameters)
 
               client.println("<p>Your recommended daily water intake is: </p>");
               client.print(daily_water_intake);
-              client.print(" oz. ");
+              client.print(" ml. ");
 
               client.println("<p>Water consumed: </p>");
               client.print(water_consumed);
-              client.print(" oz. ");
+              client.print(" ml. ");
+
+              client.println("<p>Current water level: </p>");
+              client.print(get_volume());
+              client.print(" ml. ");
 
               client.println("<p>Water remaining til goal: </p>");
               client.print(water_intake_remaining);
-              client.print(" oz. ");
+              client.print(" ml. ");
               client.println("</body></html>");
         
               // The HTTP response ends with another blank line
@@ -239,124 +215,65 @@ void wifi(void *pvParameters)
   }
 }
 
-float get_volume()
+double get_volume()
 {
-  digitalWrite(TRIGGER_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIGGER_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIGGER_PIN, LOW);
+  double* distances = HCSR04.measureDistanceCm();
+  double volume = map(distances[0],18.5, 3.16, 0, 1000);
+  Serial.println(volume);
+  delay(1000);
+  Serial.println(distances[0]);
 
-  if (i < sizeof(duration)/sizeof(float)) { //Takes 10 Samples of Duration
-    duration [i] = pulseIn(ECHO_PIN, HIGH);
-    i++;
-  }
-  else {  //Add all elements of Duration Array
-    for (int j = 0; j < sizeof(duration)/sizeof(float); j++) {
-      duration_sum = duration_sum + duration[j];      
-  }
-  duration_avg = duration_sum/(sizeof(duration)/sizeof(float));
-  if (k < 2) {
-    compare[k] = duration_avg*.0343/2;
-    Serial.println(k);
-    k++;
-    if (compare[0] == compare[1]) {
-      distance = compare[0];
-      if (distance < 4.0) {
-        volume = 1000;
-      }
-      else if (distance >= 4.0 && distance < 6.0) {
-        volume = 900;
-      }
-      else if (distance >= 6.0 && distance < 8.0) {
-        volume = 800;
-      }
-      else if (distance >= 8.0 && distance < 9.0) {
-        volume = 700;
-      }
-      else if (distance >= 9.0 && distance < 10.0) {
-        volume = 600;
-      }
-      else if (distance >= 10.0 && distance < 12.0) {
-        volume = 500;
-      }
-      else if (distance >= 12.0 && distance < 14.0) {
-        volume = 400;
-      }
-      else if (distance >= 14.0 && distance < 16.0) {
-        volume = 300;
-      }
-      else if (distance >= 16.0 && distance < 17.0) {
-        volume = 200;
-      }
-      else if (distance >= 17.0 && distance < 18.0) {
-        volume = 100;
-      }
-      else if (distance >= 18) {
-        volume = 0;
-      }
-    }
-    if (k == 2) {
-      k = 0;
-    }
-  }
-  duration_sum = 0;
   return volume;
 }
 
-int get_time(char time_element)
-{
-  time_t now = time(0);
-  tm *ltm = localtime(&now);
-  switch(time_element)
-  {
-    case ('h'):
-      return ltm->tm_hour;
-      break;
-    case ('m'):
-      return ltm->tm_min;
-      break;
-    case ('s'):
-      return ltm->tm_sec;
-      break;
-  }
-  return 0;
+
+void read_time() {
+ tmElements_t tm;
+
+ if (RTC.read(tm)) {
+ seconds = tm.Second;
+ minutes = tm.Minute;
+ hours = tm.Hour;
+  } 
 }
 
 void waterIntakeCalculation(void * pvParameters)
 {
   (void) pvParameters;
-  while(1)
+  float current_volume = get_volume();
+  if (water_intake_times == 0)
   {
-    float current_volume = get_volume();
-    int current_time = get_time('h');
-
-    // some water consumed
-    if(current_volume < temp_volume)
-    {
-      water_consumed += temp_volume - current_volume;
-      last_water_consumed_time = get_time('h');
-    }
-    // alarm if no water consume for more than 2 hours
-    if(get_time('h') - last_water_consumed_time >= 2 && last_water_consumed_time != 0)
-    {
-      alarm();
-    }
-
-    // calculate water remainting til hitting goals
-    water_intake_remaining = daily_water_intake - water_consumed;
-
-    // update temporary volume
-    temp_volume = get_volume();
-
-    if (get_time('h') == 0 && get_time('m') < 15) // new day, reset
-    {
-      water_intake_remaining = 0;
-      last_water_consumed_time = 0;
-    }
+    temp_volume = current_volume;
+    water_intake_times = 1;
   }
-  //run calculation every 15 min
-  vTaskDelay(90000/portTICK_PERIOD_MS);
+  // consumed water
+  if((current_volume < temp_volume) && (hours < 24))
+  {
+    water_consumed[water_intake_times - 1] = current_volume - temp_volume;
+    water_intake_times++;
+    temp_volume = current_volume;
+    idle_time = 0;
+  }
+  // water is refilled
+  else if (current_volume > temp_volume)
+  {
+    temp_volume = current_volume;
+  }
+  // no water is consumed
+  else if (current_volume == temp_volume)
+  {
+    idle_time+=1;
+  }
+}
+
+float total_water_intake_in_day()
+{
+    total_water_intake_today = 0;
+    for (int i=0; i < water_intake_times; i++)
+    {
+        total_water_intake_today = total_water_intake_today + water_consumed[i];
+    }
+    return total_water_intake_today;
 }
 
 void alarm()
