@@ -14,15 +14,14 @@
 #define BUZZER 13
 
 int last_water_consumed_time;
-
 float temp_volume = 0;
-float water_consumed[] = 0;
-float water_intake_remaining = 2000;
-float daily_water_intake = 0;
-int water_intake_times = 0;
-int seconds, minutes, hours;
-int idle_time = 0;
-float total_water_intake_today = 0;
+float water_consumed = 0;
+float water_intake_remaining;
+float daily_water_intake;
+
+// boolean variable for things that only run at the beginning
+bool start = false; 
+bool selected = false;
 
 // wifi stuff
 const char* ssid = "abc";
@@ -35,19 +34,50 @@ unsigned long currentTime = millis();
 unsigned long previousTime = 0; 
 const long timeoutTime = 2000;
 
+// real time clock stuff
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = -18000;
+const int   daylightOffset_sec = 0;
 
-int get_time(char time_element);
+// prototype function
+
+//main functions
 void web_app(void *pvParameters);
 void wifi(void * pvParameters);
-double get_volume();
 void waterIntakeCalculation(void *pvParameters);
+
+// helper function
 void alarm();
+double get_volume();
+int get_time(char time_element);
+
+// html stuff for page heading
+const char pageHeader[] PROGMEM = R"=====(
+
+<table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#663399">
+  <tr>
+  	 <td>
+  	 	<table border="0" width="85%" cellpadding="15" cellspacing="0" align="center">
+           <tr>
+           	   <td>
+           	   	  <font face="Open Sans" color="white" size="5">
+           	       <strong>Hydro Homies</strong>
+           	      </font>
+           	   </td>
+           </tr>
+  	 	</table>
+  	 </td>
+  </tr>
+</table>
+
+)=====";
 
 void setup() {
 
   HCSR04.begin(TRIGGER, ECHO);
   pinMode(BUZZER, OUTPUT);
   Serial.begin(115200);
+
   // RTOS TASKS 
 
   // web app task
@@ -73,7 +103,7 @@ void setup() {
   xTaskCreatePinnedToCore(
   waterIntakeCalculation
   ,  "volume"   
-  ,  4096  
+  ,  5120  
   ,  NULL
   ,  2  
   ,  NULL 
@@ -122,36 +152,42 @@ void web_app(void *pvParameters)
               client.println("<link rel=\"icon\" href=\"data:,\">");
               
               // buttons
-              client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
-              client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
-              client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
-              client.println(".button2 {background-color: #555555;}</style></head>");
+              client.println("<style>html { font-family: serif; display: inline-block; margin: 0px auto; text-align: center;}");
+              client.print(".button { background-color: #4CAF50; border-radius: 8px; border: none; color: white; padding: 8px 22px;");
+              client.print("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
+              client.print(".button2 {background-color: #555555;}</style></head>");
               
               // Web Page Heading
-              client.println("<body><h1>Hydro Homies</h1>");
+              client.println(pageHeader);
               
               // Select your gender
-              client.println("<p>Select your gender: </p>");
-              client.println("<p><a href=\"/M\"><button class=\"button\">MALE</button></a></p>");
+              client.print("<p>Select your gender: </p>");
+              client.print("<p><a href=\"/M\"><button class=\"button\">MALE</button></a></p>");
               client.print("<p><a href=\"/F\"><button class=\"button\">FEMALE</button></a></p>");
 
-              client.println("<p>Your recommended daily water intake is: </p>");
-              client.print(daily_water_intake);
-              client.print(" ml. ");
+              if (selected)
+              {
+                client.print("<p>Your recommended daily water intake is: </p>");
+                client.print(daily_water_intake);
+                client.println(" ml. ");
+                
 
-              client.println("<p>Water consumed: </p>");
-              client.print(water_consumed);
-              client.print(" ml. ");
+                client.print("<p>Water consumed: </p>");
+                client.print(water_consumed);
+                client.println(" ml. ");
 
-              client.println("<p>Current water level: </p>");
-              client.print(get_volume());
-              client.print(" ml. ");
+                client.print("<p>Current water level: </p>");
+                client.print(get_volume());
+                client.println(" ml. ");
 
-              client.println("<p>Water remaining til goal: </p>");
-              client.print(water_intake_remaining);
-              client.print(" ml. ");
+                client.print("<p>Water remaining until goal: </p>");
+                client.print(daily_water_intake - water_consumed);
+                client.print(" ml. ");
+
+              }
+
               client.println("</body></html>");
-        
+              
               // The HTTP response ends with another blank line
               client.println();
               // Break out of the while loop
@@ -163,10 +199,12 @@ void web_app(void *pvParameters)
             currentLine += c;      // add it to the end of the currentLine
           }
           if (currentLine.endsWith("GET /M")) {
-            daily_water_intake = 104;             
+            daily_water_intake = 3700;
+            selected = true;             
           }
           if (currentLine.endsWith("GET /F")) {
-            daily_water_intake = 72;               
+            daily_water_intake = 2700;      
+            selected = true;         
           }
         }
       }
@@ -218,64 +256,89 @@ void wifi(void *pvParameters)
 double get_volume()
 {
   double* distances = HCSR04.measureDistanceCm();
+  delay(10);
   double volume = map(distances[0],18.5, 3.16, 0, 1000);
-  Serial.println(volume);
-  delay(1000);
-  Serial.println(distances[0]);
-
+  //Serial.println(volume);
+  delay(500);
+  //Serial.println(distances[0]);
   return volume;
 }
 
+//get time function
+int get_time(char time_element)
+{
 
-void read_time() {
- tmElements_t tm;
-
- if (RTC.read(tm)) {
- seconds = tm.Second;
- minutes = tm.Minute;
- hours = tm.Hour;
-  } 
+  // uncomment this line to enable real time clock
+  //configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  time_t now = time(0);
+  tm *ltm = localtime(&now);
+  switch(time_element)
+  {
+    case ('h'):
+      return ltm->tm_hour;
+      break;
+    case ('m'):
+      return ltm->tm_min;
+      break;
+    case ('s'):
+      return ltm->tm_sec;
+      break;
+  }
+  return 0;
 }
 
 void waterIntakeCalculation(void * pvParameters)
 {
   (void) pvParameters;
-  float current_volume = get_volume();
-  if (water_intake_times == 0)
+  while(1)
   {
-    temp_volume = current_volume;
-    water_intake_times = 1;
-  }
-  // consumed water
-  if((current_volume < temp_volume) && (hours < 24))
-  {
-    water_consumed[water_intake_times - 1] = current_volume - temp_volume;
-    water_intake_times++;
-    temp_volume = current_volume;
-    idle_time = 0;
-  }
-  // water is refilled
-  else if (current_volume > temp_volume)
-  {
-    temp_volume = current_volume;
-  }
-  // no water is consumed
-  else if (current_volume == temp_volume)
-  {
-    idle_time+=1;
-  }
-}
+    vTaskDelay(15000/portTICK_PERIOD_MS);
 
-float total_water_intake_in_day()
-{
-    total_water_intake_today = 0;
-    for (int i=0; i < water_intake_times; i++)
+    //get current volume
+    float current_volume = get_volume(); 
+
+    /*
+    Serial.print("temp volume: ");
+    Serial.println(temp_volume);
+    Serial.print("current volume: ");
+    Serial.println(current_volume);
+    */
+
+    // some water consumed
+    if(current_volume < temp_volume)
     {
-        total_water_intake_today = total_water_intake_today + water_consumed[i];
+      water_consumed += temp_volume - current_volume;
+      last_water_consumed_time = get_time('m');
+      start = true;
     }
-    return total_water_intake_today;
+
+    /*
+    Serial.print("last water consumed time :");
+    Serial.println(last_water_consumed_time);
+    Serial.print("hours since drinking: ");
+    Serial.println(get_time('m') - last_water_consumed_time);*/
+
+    // sound alarm if it has been ___ since last drinking time, ignoring nightime
+    if(get_time('m') - last_water_consumed_time >= 2 && start && get_time('h') < 20 && get_time('h') > 7)
+    {
+      alarm();
+    }
+
+    // new day, reset
+    if (get_time('h') == 0)
+    {
+      water_consumed = 0;
+      start;
+    }
+    
+    // update temporary variable
+    temp_volume = current_volume; 
+    vTaskDelay(15000/portTICK_PERIOD_MS);
+  }
+  vTaskDelay(100);
 }
 
+// sound off buzzer
 void alarm()
 {
   for (int i = 0; i < 5; i ++)
