@@ -328,7 +328,7 @@ void waterIntakeCalculation(void * pvParameters)
     if (get_time('h') == 0)
     {
       water_consumed = 0;
-      start;
+      start = false;
     }
     
     // update temporary variable
